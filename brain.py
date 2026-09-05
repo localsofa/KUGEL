@@ -1,65 +1,73 @@
-from llm import ask_ollama
-from memory import save_note, get_notes
-from actions import add_todo, add_event
-import json
+from actions import (
+    create_todo,
+    list_todos,
+    create_note,
+    create_project
+)
 
-def decide(user_text: str):
-    text = user_text.strip().lower()
-    original_text = user_text.strip()
+from llm import classify_intent
 
-    # --- RULES  ---
 
-    if "todo" in text or "add task" in text:
-        return {"intent": "todo_add", "content": original_text}
+def process(text):
 
-    if text.startswith("remember"):
-        return {"intent": "note_add", "content": original_text}
+    text_lower = text.lower().strip()
+    print(f"\n[DEBUG] Input: {text}")
 
-    if any(phrase in text for phrase in [
-        "what do i remember",
-        "what i remember",
-        "what's in my notes",
-        "what is in my notes",
-        "show my notes",
-        "list my notes",
-        "read my notes",
-        "my notes",
-    ]):
-        return {"intent": "note_query", "content": original_text}
+    # ----------------------
+    # SIMPLE RULES
+    # ----------------------
 
-    if "note" in text or "notes" in text:
-        return {"intent": "note_add", "content": original_text}
+    if text_lower.startswith("add todo"):
+        task = text[8:].strip()
+        return create_todo(task)
 
-    if "calendar" in text or "event" in text:
-        return {"intent": "calendar_add", "content": original_text}
+    if text_lower in ["show todos", "list todos", "what are my tasks"]:
+        return list_todos()
 
-    # --- FALLBACK TO LLM ---
-    # if request is not contained within the rules
+    if text_lower.startswith("remember"):
+        content = text[len("remember"):].strip()
+        return create_note(content)
 
-    structured = ask_ollama(f"""
-You are KUGEL's intent parser.
+    if text_lower.startswith("create project"):
+        name = text[len("create project"):].strip()
+        return create_project(name)
 
-Return JSON ONLY.
+    # ----------------------
+    # LLM INTENT RECOGNITION
+    # ----------------------
 
-Possible intents:
-- todo_add
-- todo_list
-- note_add
-- note_query
-- calendar_add
-- general_chat
+    intent = classify_intent(text)
+    print(f"[DEBUG] Intent result: {intent}")
 
-User input:
-{text}
+    return execute_intent(intent, text)
 
-Output format:
-{{"intent": "...", "content": "..."}}
-""")
 
-    try:
-        return json.loads(structured)
-    except:
-        return {
-            "intent": "general_chat",
-            "content": structured
-        }
+def execute_intent(intent, original_text):
+
+    print(f"[DEBUG] Executing: {intent}")
+
+    intent_name = intent.get("intent", "chat")
+    content = intent.get("content", original_text)
+
+    if intent_name == "todo_create":
+        return create_todo(content)
+
+    elif intent_name == "todo_list":
+        return list_todos()
+
+    elif intent_name == "note_create":
+        return create_note(content)
+
+    elif intent_name == "project_create":
+        return create_project(content)
+
+    elif intent_name == "chat":
+        return (
+            "I'm not sure what action you want me to take yet."
+        )
+
+    else:
+        return (
+            f"I understood the intent '{intent_name}', "
+            "but I don't know how to execute it yet."
+        )

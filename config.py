@@ -1,0 +1,2 @@
+AUDIO_MODE = False
+OLLAMA_MODEL = "llama3"

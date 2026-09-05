@@ -1,14 +1,50 @@
-from router import process
+from config import AUDIO_MODE
+from database import init_database
+from brain import process
 
-print("KUGEL online. Servus!\n")
+if AUDIO_MODE:
+    from audio import listen
+
+
+init_database()
+
+print("KUGEL online.")
 
 while True:
-    user = input("You: ")
 
-    if user.lower() in ["exit", "quit"]:
-        print("KUGEL: bye! :)")
+    # -------------------
+    # AUDIO MODE
+    # -------------------
+
+    if AUDIO_MODE:
+
+        input("\nPress ENTER to talk...")
+
+        user_text = listen()
+
+        print(f"You: {user_text}")
+
+    # -------------------
+    # TEXT MODE
+    # -------------------
+
+    else:
+
+        user_text = input("\nYou: ")
+
+    # -------------------
+    # EXIT
+    # -------------------
+
+    if user_text.lower() in ["exit", "quit", "bye", "goodbye", "tschüss", "pfirti"]:
+
+        print("KUGEL: Goodbye.")
         break
 
-    response = process(user)
+    # -------------------
+    # BRAIN
+    # -------------------
 
-    print("KUGEL:", response)
+    response = process(user_text)
+
+    print(f"KUGEL: {response}")
