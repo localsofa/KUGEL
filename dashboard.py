@@ -136,3 +136,118 @@ def show_overview(audio_mode=False):
     )
 
     console.print()
+
+
+def show_tasks():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, task
+        FROM todos
+        WHERE completed = 0
+        ORDER BY created_at DESC
+    """)
+
+    tasks = cursor.fetchall()
+    conn.close()
+
+    console.print()
+    console.print(
+        "════════════ KUGEL TASKS ════════════",
+        style="bold green"
+    )
+    console.print()
+
+    if not tasks:
+        console.print("No open tasks.", style="dim")
+    else:
+        for task_id, task in tasks:
+            console.print(f"[ ] {task_id}. {task}")
+
+    console.print()
+    console.print(
+        "════════════════════════════════════",
+        style="bold green"
+    )
+    console.print()
+
+
+def show_projects():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, name, created_at
+        FROM projects
+        ORDER BY created_at DESC
+    """)
+
+    projects = cursor.fetchall()
+    conn.close()
+
+    console.print()
+    console.print(
+        "══════════ KUGEL PROJECTS ══════════",
+        style="bold green"
+    )
+    console.print()
+
+    if not projects:
+        console.print("No projects.", style="dim")
+    else:
+        for project_id, name, created_at in projects:
+            console.print(
+                f"> {project_id}. {name}  "
+                f"[dim]{created_at}[/dim]"
+            )
+
+    console.print()
+    console.print(
+        "════════════════════════════════════",
+        style="bold green"
+    )
+    console.print()
+
+
+def show_calendar():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, title, event_date, event_time
+        FROM events
+        ORDER BY event_date, event_time
+        LIMIT 10
+    """)
+
+    events = cursor.fetchall()
+    conn.close()
+
+    console.print()
+    console.print(
+        "══════════ KUGEL CALENDAR ══════════",
+        style="bold green"
+    )
+    console.print()
+
+    if not events:
+        console.print("No upcoming events.", style="dim")
+    else:
+        for event_id, title, event_date, event_time in events:
+
+            if event_time:
+                time_text = f" {event_time}"
+            else:
+                time_text = ""
+
+            console.print(
+                f"[{event_date}{time_text}] {title}"
+            )
+
+    console.print()
+    console.print(
+        "════════════════════════════════════",
+        style="bold green"
+    )
+    console.print()
