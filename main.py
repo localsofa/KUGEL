@@ -1,6 +1,7 @@
 from config import AUDIO_MODE
 from database import init_database
 from brain import process
+from dashboard import show_overview
 
 if AUDIO_MODE:
     from audio import listen
@@ -40,6 +41,14 @@ while True:
 
         print("KUGEL: Goodbye.")
         break
+
+    # -------------------
+    # DASHBOARD
+    # -------------------
+    
+    if user_text.lower().strip() == "/overview":
+        show_overview(AUDIO_MODE)
+        continue
 
     # -------------------
     # BRAIN
