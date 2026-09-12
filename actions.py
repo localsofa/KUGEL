@@ -71,3 +71,51 @@ def create_project(name):
     conn.close()
 
     return f"Project '{name}' created." 
+
+
+def create_event(title, event_date, event_time=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO events (title, event_date, event_time)
+        VALUES (?, ?, ?)
+        """,
+        (title, event_date, event_time)
+    )
+
+    conn.commit()
+    conn.close()
+
+    if event_time:
+        return f"Event '{title}' added for {event_date} at {event_time}."
+    else:
+        return f"Event '{title}' added for {event_date}."
+
+
+def list_events():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, title, event_date, event_time
+        FROM events
+        ORDER BY event_date, event_time
+    """)
+
+    events = cursor.fetchall()
+    conn.close()
+
+    if not events:
+        return "You don't have any upcoming events."
+
+    result = "Your upcoming events:\n"
+
+    for event_id, title, event_date, event_time in events:
+        if event_time:
+            result += f"{event_id}. {event_date} {event_time} - {title}\n"
+        else:
+            result += f"{event_id}. {event_date} - {title}\n"
+
+    return result

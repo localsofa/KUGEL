@@ -2,7 +2,8 @@ from actions import (
     create_todo,
     list_todos,
     create_note,
-    create_project
+    create_project,
+    create_event
 )
 
 from llm import classify_intent
@@ -31,6 +32,26 @@ def process(text):
     if text_lower.startswith("create project"):
         name = text[len("create project"):].strip()
         return create_project(name)
+
+    if text_lower.startswith("event "):
+        data = text[6:].split("|")
+
+        if len(data) < 2:
+            return "Format: event TITLE ; YYYY-MM-DD ; HH:MM"
+
+        title = data[0].strip()
+        event_date = data[1].strip()
+
+        event_time = None
+
+        if len(data) >= 3:
+            event_time = data[2].strip()
+
+        return create_event(
+            title,
+            event_date,
+            event_time
+        )
 
     # ----------------------
     # LLM INTENT RECOGNITION
