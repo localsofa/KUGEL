@@ -119,3 +119,22 @@ def list_events():
             result += f"{event_id}. {event_date} - {title}\n"
 
     return result
+
+
+def complete_todo(todo_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE todos SET completed = 1 WHERE id = ?",
+        (todo_id,)
+    )
+
+    conn.commit()
+    updated = cursor.rowcount
+    conn.close()
+
+    if updated:
+        return True
+
+    return False
