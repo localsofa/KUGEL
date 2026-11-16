@@ -2,7 +2,6 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
 import subprocess
 import sys
 import queue
@@ -321,7 +320,8 @@ class KugelPuppy:
                 token_cache=cache
             )
             accounts = client.get_accounts()
-            if self.outlook_switch_account_requested:
+            switching_account = self.outlook_switch_account_requested
+            if switching_account:
                 for account in accounts:
                     client.remove_account(account)
                 accounts = []
@@ -332,10 +332,10 @@ class KugelPuppy:
                 if accounts else None
             )
             if not token:
-                token = client.acquire_token_interactive(
-                    scopes=OUTLOOK_SCOPES,
-                    prompt="select_account"
-                )
+                interactive_options = {"scopes": OUTLOOK_SCOPES}
+                if switching_account:
+                    interactive_options["prompt"] = "select_account"
+                token = client.acquire_token_interactive(**interactive_options)
 
             access_token = token.get("access_token")
             if not access_token:
@@ -387,24 +387,20 @@ class KugelPuppy:
 
     @staticmethod
     def summarize_recent_emails(requests, access_token):
-        since = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
         response = requests.get(
             GRAPH_MESSAGES_ENDPOINT,
             headers={"Authorization": "Bearer " + access_token},
             params={
                 "$select": "from,subject,bodyPreview,receivedDateTime",
-                "$filter": f"receivedDateTime ge {since}",
                 "$orderby": "receivedDateTime desc",
-                "$top": "50",
+                "$top": "5",
             },
             timeout=30
         )
         response.raise_for_status()
         messages = response.json().get("value", [])
         if not messages:
-            return "No emails received in the past hour."
+            return "No emails found in your inbox."
 
         email_details = []
         for message in messages:
@@ -412,6 +408,7 @@ class KugelPuppy:
             email_details.append(
                 f"From: {sender.get('name') or sender.get('address') or 'Unknown sender'}\n"
                 f"Subject: {message.get('subject') or '(No subject)'}\n"
+                f"Received: {message.get('receivedDateTime') or 'Unknown date'}\n"
                 f"Preview: {message.get('bodyPreview') or '(No preview available)'}"
             )
 
@@ -437,7 +434,7 @@ class KugelPuppy:
         summary = response.json().get("response", "").strip()
         if not summary:
             raise RuntimeError("The local Ollama model returned an empty summary.")
-        return f"{len(messages)} email(s) from the past hour:\n\n{summary}"
+        return f"Summary of your {len(messages)} most recent email(s):\n\n{summary}"
 
     def process_outlook_results(self):
         try:
@@ -467,7 +464,7 @@ class KugelPuppy:
                     continue
                 if status == "startup_summary":
                     messagebox.showinfo(
-                        "KUGEL // Emails from the past hour",
+                        "KUGEL // Latest five emails",
                         result,
                         parent=self.root
                     )
